@@ -1,0 +1,37 @@
+services:
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - "6380:6379"
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+  
+  daily_threader:
+    build: 
+        context: ./
+        dockerfile: Dockerfile
+    container_name: daily-threader
+    restart: unless-stopped
+    environment:
+      - THREAD_APP_ACCESS_TOKEN=
+      - THREAD_APP_CLIENT_SECRET=
+      - THREAD_APP_CLIENT_ID=
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    tty: true
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redpanda_data:
+    driver: local
+  redis:
+    driver: local
